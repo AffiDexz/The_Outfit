@@ -1,5 +1,7 @@
 // lib/screens/splash_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart';
 import '../utils/app_constants.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -25,22 +27,23 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _logoFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.5)),
-    );
+        CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.5)));
     _scale = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
-    );
+        CurvedAnimation(parent: _ctrl,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOut)));
     _fade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl, curve: const Interval(0.4, 0.9)),
-    );
+        CurvedAnimation(parent: _ctrl, curve: const Interval(0.4, 0.9)));
 
     _ctrl.forward();
 
-    // Navigate after 3 seconds
-    Future.delayed(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
-      }
+    // After animation, route based on Firebase auth state
+    Future.delayed(const Duration(milliseconds: 2800), () {
+      if (!mounted) return;
+      final isLoggedIn = context.read<UserProvider>().isLoggedIn;
+      Navigator.pushReplacementNamed(
+        context,
+        isLoggedIn ? AppRoutes.main : AppRoutes.login,
+      );
     });
   }
 
@@ -56,54 +59,58 @@ class _SplashScreenState extends State<SplashScreen>
       backgroundColor: AppColors.primary,
       body: Stack(
         children: [
-          // Gold gradient accent at top
+          // Ambient glow
           Positioned(
-            top: -100,
-            left: -100,
+            top: -100, left: -100,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 300, height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.accent.withAlpha(38),
-                    Colors.transparent,
-                  ],
-                ),
+                gradient: RadialGradient(colors: [
+                  AppColors.accent.withValues(alpha: 0.15),
+                  Colors.transparent,
+                ]),
               ),
             ),
           ),
+          Positioned(
+            bottom: -80, right: -80,
+            child: Container(
+              width: 240, height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  AppColors.accent.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
+          ),
+
           // Center content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo icon
                 ScaleTransition(
                   scale: _scale,
                   child: FadeTransition(
                     opacity: _logoFade,
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: 100, height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.accent, width: 1.5),
                         color: AppColors.surface,
                       ),
                       child: const Center(
-                        child: Icon(
-                          Icons.diamond_outlined,
-                          color: AppColors.accent,
-                          size: 46,
-                        ),
+                        child: Icon(Icons.diamond_outlined,
+                            color: AppColors.accent, size: 46),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 28),
-                // App name
                 FadeTransition(
                   opacity: _fade,
                   child: Column(
@@ -115,15 +122,10 @@ class _SplashScreenState extends State<SplashScreen>
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 10,
-                          fontFamily: 'Poppins',
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Container(
-                        width: 60,
-                        height: 1,
-                        color: AppColors.accent,
-                      ),
+                      Container(width: 60, height: 1, color: AppColors.accent),
                       const SizedBox(height: 8),
                       const Text(
                         'LUXURY FASHION',
@@ -140,21 +142,17 @@ class _SplashScreenState extends State<SplashScreen>
               ],
             ),
           ),
-          // Loading indicator at bottom
+
+          // Loading indicator
           Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
+            bottom: 60, left: 0, right: 0,
             child: FadeTransition(
               opacity: _fade,
               child: const Center(
                 child: SizedBox(
-                  width: 24,
-                  height: 24,
+                  width: 24, height: 24,
                   child: CircularProgressIndicator(
-                    color: AppColors.accent,
-                    strokeWidth: 1.5,
-                  ),
+                    color: AppColors.accent, strokeWidth: 1.5),
                 ),
               ),
             ),

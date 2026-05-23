@@ -14,28 +14,31 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
-  final _formKey      = GlobalKey<FormState>();
-  final _nameCtrl     = TextEditingController();
-  final _emailCtrl    = TextEditingController();
-  final _passCtrl     = TextEditingController();
-  final _confirmCtrl  = TextEditingController();
-  bool _obscureP      = true;
-  bool _obscureC      = true;
-  bool _loading       = false;
-  bool _agree         = false;
+  final _formKey     = GlobalKey<FormState>();
+  final _nameCtrl    = TextEditingController();
+  final _emailCtrl   = TextEditingController();
+  final _phoneCtrl   = TextEditingController();
+  final _passCtrl    = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscureP     = true;
+  bool _obscureC     = true;
+  bool _agree        = false;
 
   late AnimationController _fadeCtrl;
-  late Animation<Offset> _slideAnim;
-  late Animation<double>  _fadeAnim;
+  late Animation<Offset>   _slideAnim;
+  late Animation<double>   _fadeAnim;
 
   @override
   void initState() {
     super.initState();
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
         .animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
+    _fadeAnim  = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
     _fadeCtrl.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProvider>().clearError();
+    });
   }
 
   @override
@@ -43,12 +46,13 @@ class _RegisterScreenState extends State<RegisterScreen>
     _fadeCtrl.dispose();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _phoneCtrl.dispose();
     _passCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
   }
 
-  void _register() async {
+  Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_agree) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -57,18 +61,14 @@ class _RegisterScreenState extends State<RegisterScreen>
       ));
       return;
     }
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-
-    // Persist user data via provider
-    context.read<UserProvider>().login(
-      fullName: _nameCtrl.text.trim(),
-      email:    _emailCtrl.text.trim(),
+    final success = await context.read<UserProvider>().register(
+      fullName: _nameCtrl.text,
+      email:    _emailCtrl.text,
+      password: _passCtrl.text,
+      phone:    _phoneCtrl.text,
     );
-
-    setState(() => _loading = false);
-    Navigator.pushReplacementNamed(context, AppRoutes.main);
+    if (!mounted) return;
+    if (success) Navigator.pushReplacementNamed(context, AppRoutes.main);
   }
 
   @override
@@ -99,13 +99,18 @@ class _RegisterScreenState extends State<RegisterScreen>
                   const Text('Create your account to start shopping',
                       style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                   const SizedBox(height: 32),
-                  _field(controller: _nameCtrl, label: 'Full Name', icon: Icons.person_outline,
+
+                  _field(controller: _nameCtrl,  label: 'Full Name',     icon: Icons.person_outline,
                       validator: (v) => v == null || v.length < 2 ? 'Enter your name' : null),
                   const SizedBox(height: 14),
                   _field(controller: _emailCtrl, label: 'Email Address', icon: Icons.email_outlined,
                       type: TextInputType.emailAddress,
                       validator: (v) => v == null || !v.contains('@') ? 'Enter valid email' : null),
                   const SizedBox(height: 14),
+                  _field(controller: _phoneCtrl, label: 'Phone Number',  icon: Icons.phone_outlined,
+                      type: TextInputType.phone),
+                  const SizedBox(height: 14),
+
                   TextFormField(
                     controller: _passCtrl,
                     obscureText: _obscureP,
@@ -138,6 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     validator: (v) => v != _passCtrl.text ? 'Passwords do not match' : null,
                   ),
                   const SizedBox(height: 20),
+
                   Row(
                     children: [
                       Checkbox(
@@ -165,7 +171,39 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ],
                   ),
                   const SizedBox(height: 28),
-                  CustomButton(label: 'CREATE ACCOUNT', onTap: _register, isLoading: _loading, width: double.infinity),
+
+                  Consumer<UserProvider>(
+                    builder: (_, userProv, __) => Column(
+                      children: [
+                        CustomButton(
+                          label: 'CREATE ACCOUNT',
+                          onTap: _register,
+                          isLoading: userProv.loading,
+                          width: double.infinity,
+                        ),
+                        if (userProv.error != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(userProv.error!,
+                                    style: const TextStyle(color: AppColors.error, fontSize: 12))),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
                   Center(
                     child: Row(
@@ -176,8 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: const Text('Sign In',
-                              style: TextStyle(color: AppColors.accent,
-                                  fontWeight: FontWeight.w600, fontSize: 14)),
+                              style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600, fontSize: 14)),
                         ),
                       ],
                     ),

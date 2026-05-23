@@ -1,4 +1,5 @@
 // lib/models/product_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Product {
   final String id;
@@ -29,7 +30,7 @@ class Product {
     required this.reviewCount,
     required this.sizes,
     required this.colors,
-    this.isNew = false,
+    this.isNew      = false,
     this.isFeatured = false,
   });
 
@@ -37,4 +38,44 @@ class Product {
     if (originalPrice == null || originalPrice! <= price) return 0;
     return ((originalPrice! - price) / originalPrice! * 100).roundToDouble();
   }
+
+  // ── Firestore deserialization ──────────────────────────────────────────────
+  factory Product.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Product(
+      id:            doc.id,
+      name:          data['name']          ?? '',
+      brand:         data['brand']         ?? 'The Outfit',
+      category:      data['category']      ?? '',
+      price:         (data['price']        ?? 0).toDouble(),
+      originalPrice: data['originalPrice'] != null
+          ? (data['originalPrice']).toDouble()
+          : null,
+      imageUrl:      data['imageUrl']      ?? '',
+      description:   data['description']   ?? '',
+      rating:        (data['rating']       ?? 0).toDouble(),
+      reviewCount:   data['reviewCount']   ?? 0,
+      sizes:         List<String>.from(data['sizes']  ?? []),
+      colors:        List<String>.from(data['colors'] ?? []),
+      isNew:         data['isNew']         ?? false,
+      isFeatured:    data['isFeatured']    ?? false,
+    );
+  }
+
+  // ── Firestore serialization ────────────────────────────────────────────────
+  Map<String, dynamic> toFirestore() => {
+        'name':          name,
+        'brand':         brand,
+        'category':      category,
+        'price':         price,
+        'originalPrice': originalPrice,
+        'imageUrl':      imageUrl,
+        'description':   description,
+        'rating':        rating,
+        'reviewCount':   reviewCount,
+        'sizes':         sizes,
+        'colors':        colors,
+        'isNew':         isNew,
+        'isFeatured':    isFeatured,
+      };
 }

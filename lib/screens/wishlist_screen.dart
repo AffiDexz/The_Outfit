@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../utils/app_constants.dart';
-import '../widgets/wishlist_item.dart';
 
 class WishlistScreen extends StatelessWidget {
   const WishlistScreen({super.key});
@@ -18,7 +17,6 @@ class WishlistScreen extends StatelessWidget {
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         title: Text('Wishlist (${wishlist.count})'),
-        // Back button only appears when pushed as a separate route
         leading: Navigator.of(context).canPop()
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -31,7 +29,8 @@ class WishlistScreen extends StatelessWidget {
               onPressed: () => _addAllToCart(context),
               child: const Text(
                 'Add All to Cart',
-                style: TextStyle(color: AppColors.accent, fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.accent, fontSize: 12),
               ),
             ),
         ],
@@ -43,45 +42,176 @@ class WishlistScreen extends StatelessWidget {
               itemCount: wishlist.items.length,
               itemBuilder: (ctx, i) {
                 final product = wishlist.items[i];
-                return WishlistItem(
-                  product: product,
-                  onRemove: () => wishlist.remove(product.id),
-                  onTap: () => Navigator.pushNamed(
-                    ctx,
-                    AppRoutes.productDetail,
-                    arguments: {
-                      'product': product,
-                      'heroTag': 'wishlist_${product.id}',
-                    },
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBg,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  onAddToCart: () {
-                    cart.addItem(product);
-                    wishlist.remove(product.id);
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(
-                        content: Row(
+                  child: Row(
+                    children: [
+                      // Product image
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(
+                          ctx,
+                          AppRoutes.productDetail,
+                          arguments: {
+                            'product': product,
+                            'heroTag': 'wishlist_${product.id}',
+                          },
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            product.imageUrl,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 80,
+                              height: 80,
+                              color: AppColors.surface,
+                              child: const Icon(
+                                  Icons.image_not_supported,
+                                  color: AppColors.textMuted),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.check_circle_rounded,
-                                color: AppColors.accent),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                '${product.name} added to cart!',
-                                style: const TextStyle(color: AppColors.white),
-                                overflow: TextOverflow.ellipsis,
+                            Text(
+                              product.brand.toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.accent,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              product.name,
+                              style: const TextStyle(
+                                color: AppColors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Text(
+                                  '\$${product.price.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: AppColors.accent,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (product.originalPrice != null) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '\$${product.originalPrice!.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 11,
+                                      decoration:
+                                          TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Add to cart button
+                            GestureDetector(
+                              onTap: () {
+                                cart.addItem(product);
+                                wishlist.remove(product.id);
+                                ScaffoldMessenger.of(ctx)
+                                    .showSnackBar(
+                                  SnackBar(
+                                    content: Row(children: [
+                                      const Icon(
+                                          Icons.check_circle_rounded,
+                                          color: AppColors.accent),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          '${product.name} added to cart!',
+                                          style: const TextStyle(
+                                              color: AppColors.white),
+                                          overflow:
+                                              TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ]),
+                                    backgroundColor: AppColors.surface,
+                                    duration:
+                                        const Duration(seconds: 2),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent,
+                                  borderRadius:
+                                      BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                        Icons.shopping_bag_outlined,
+                                        color: AppColors.primary,
+                                        size: 13),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'ADD TO CART',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        backgroundColor: AppColors.surface,
-                        duration: const Duration(seconds: 2),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        behavior: SnackBarBehavior.floating,
-                        margin: const EdgeInsets.all(16),
                       ),
-                    );
-                  },
+
+                      // Remove heart button
+                      IconButton(
+                        onPressed: () =>
+                            wishlist.remove(product.id),
+                        icon: const Icon(
+                          Icons.favorite_rounded,
+                          color: AppColors.accent,
+                          size: 22,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -105,13 +235,14 @@ class WishlistScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
 
-// ── Empty Wishlist State ───────────────────────────────────────────────────────
+// ── Empty Wishlist ─────────────────────────────────────────────────────────────
 class _EmptyWishlist extends StatelessWidget {
   const _EmptyWishlist();
 
@@ -122,8 +253,8 @@ class _EmptyWishlist extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 36),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Icon with decorative ring
             Container(
               width: 100,
               height: 100,
@@ -151,28 +282,20 @@ class _EmptyWishlist extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Save items you love for later',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+              style: TextStyle(
+                  color: AppColors.textMuted, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            // Fixed-width button — no longer expands to full screen width
+            // ── Fixed-width centred button ──────────────────────────
             SizedBox(
               width: 220,
               height: 50,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: () => Navigator.pushNamed(
                   context,
                   AppRoutes.productList,
                   arguments: {'category': 'All'},
-                ),
-                icon: const Icon(Icons.storefront_outlined, size: 18),
-                label: const Text(
-                  'EXPLORE PRODUCTS',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
@@ -180,6 +303,25 @@ class _EmptyWishlist extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.storefront_outlined, size: 18,
+                        color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text(
+                      'EXPLORE PRODUCTS',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

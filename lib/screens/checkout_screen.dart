@@ -119,7 +119,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     userProv.placeOrder(
       items:           cart.items.toList(),
       total:           cart.subtotal + _shippingCost,
-      deliveryAddress: '${_addressCtrl.text}, ${_cityCtrl.text} ${_zipCtrl.text}',
+      deliveryAddress: '${_addressCtrl.text}, ${_cityCtrl.text} ${_zipCtrl.text}', paymentMethod: '',
     );
 
     // Update user profile address if they typed one

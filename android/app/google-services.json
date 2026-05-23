@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "227359733617",
+    "project_id": "the-outfit-app-cec29",
+    "storage_bucket": "the-outfit-app-cec29.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:227359733617:android:369443d900a65041b5e8d0",
+        "android_client_info": {
+          "package_name": "com.example.the_outfit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBX7tEY-xd49sASGqOQ0-Y4xyxCJTaeROQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

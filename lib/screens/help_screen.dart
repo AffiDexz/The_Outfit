@@ -39,7 +39,6 @@ class _HelpScreenState extends State<HelpScreen> {
     },
   ];
 
-  // FIX: show "Coming Soon" snackbar for contact buttons
   void _showComingSoon(String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -109,14 +108,12 @@ class _HelpScreenState extends State<HelpScreen> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      // FIX: Email Us — now tappable with Coming Soon feedback
                       _contactChip(
                         icon: Icons.email_outlined,
                         label: 'Email Us',
                         onTap: () => _showComingSoon('Email Support'),
                       ),
                       const SizedBox(width: 10),
-                      // FIX: Live Chat — now tappable with Coming Soon feedback
                       _contactChip(
                         icon: Icons.chat_bubble_outline,
                         label: 'Live Chat',
@@ -186,7 +183,6 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 
-  // FIX: _contactChip now accepts onTap callback — was a static Container before
   Widget _contactChip({
     required IconData icon,
     required String label,

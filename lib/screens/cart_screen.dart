@@ -16,7 +16,6 @@ class CartScreen extends StatelessWidget {
       backgroundColor: AppColors.primary,
       appBar: AppBar(
         title: const Text('My Cart'),
-        // Show back button only when pushed on top of another screen
         leading: Navigator.of(context).canPop()
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -26,37 +25,11 @@ class CartScreen extends StatelessWidget {
         actions: [
           if (cart.items.isNotEmpty)
             TextButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    backgroundColor: AppColors.surface,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    title: const Text('Clear Cart',
-                        style: TextStyle(color: AppColors.white)),
-                    content: const Text('Remove all items from cart?',
-                        style: TextStyle(color: AppColors.textMuted)),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel',
-                            style: TextStyle(color: AppColors.textMuted)),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          cart.clearCart();
-                          Navigator.pop(context);
-                        },
-                        child: const Text('Clear',
-                            style: TextStyle(color: AppColors.error)),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              child: const Text('Clear',
-                  style: TextStyle(color: AppColors.accent, fontSize: 13)),
+              onPressed: () => _confirmClear(context),
+              child: const Text(
+                'Clear',
+                style: TextStyle(color: AppColors.accent, fontSize: 13),
+              ),
             ),
         ],
       ),
@@ -72,20 +45,24 @@ class CartScreen extends StatelessWidget {
                       final item = cart.items[i];
                       return Dismissible(
                         key: Key(
-                            '${item.product.id}_${item.selectedSize}_${item.selectedColor}'),
+                          '${item.product.id}_${item.selectedSize}_${item.selectedColor}',
+                        ),
                         direction: DismissDirection.endToStart,
                         background: Container(
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withAlpha(51),
+                            color: AppColors.error.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(Icons.delete_outline_rounded,
-                              color: AppColors.error),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: AppColors.error,
+                          ),
                         ),
-                        onDismissed: (_) => cart.removeItem(i),
+                        onDismissed: (_) =>
+                            context.read<CartProvider>().removeItem(i),
                         child: _CartItemCard(index: i),
                       );
                     },
@@ -94,6 +71,36 @@ class CartScreen extends StatelessWidget {
                 _OrderSummary(cart: cart),
               ],
             ),
+    );
+  }
+
+  void _confirmClear(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text('Clear Cart',
+            style: TextStyle(color: AppColors.white)),
+        content: const Text('Remove all items from cart?',
+            style: TextStyle(color: AppColors.textMuted)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<CartProvider>().clearCart();
+              Navigator.pop(context);
+            },
+            child: const Text('Clear',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -117,6 +124,7 @@ class _CartItemCard extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Product image
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
@@ -134,6 +142,8 @@ class _CartItemCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
+
+          // Product info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,10 +176,13 @@ class _CartItemCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // Delete + qty controls
           Column(
             children: [
               GestureDetector(
-                onTap: () => context.read<CartProvider>().removeItem(index),
+                onTap: () =>
+                    context.read<CartProvider>().removeItem(index),
                 child: const Icon(Icons.delete_outline_rounded,
                     color: AppColors.textMuted, size: 18),
               ),
@@ -182,14 +195,15 @@ class _CartItemCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _QtyButton(
+                    _QtyBtn(
                       icon: Icons.remove,
                       onTap: () => context
                           .read<CartProvider>()
                           .decreaseQuantity(index),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         '${item.quantity}',
                         style: const TextStyle(
@@ -199,7 +213,7 @@ class _CartItemCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _QtyButton(
+                    _QtyBtn(
                       icon: Icons.add,
                       onTap: () => context
                           .read<CartProvider>()
@@ -216,16 +230,16 @@ class _CartItemCard extends StatelessWidget {
   }
 }
 
-class _QtyButton extends StatelessWidget {
+class _QtyBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _QtyButton({required this.icon, required this.onTap});
+  const _QtyBtn({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(6),
         child: Icon(icon, color: AppColors.accent, size: 16),
       ),
@@ -244,21 +258,26 @@ class _OrderSummary extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
-          _row('Subtotal', '\$${cart.subtotal.toStringAsFixed(2)}'),
+          _row('Subtotal',
+              '\$${cart.subtotal.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
-          _row('Shipping', '\$${cart.shipping.toStringAsFixed(2)}'),
+          _row('Shipping',
+              '\$${cart.shipping.toStringAsFixed(2)}'),
           const SizedBox(height: 12),
           const Divider(color: AppColors.divider),
           const SizedBox(height: 12),
-          _row('Total', '\$${cart.total.toStringAsFixed(2)}', isBold: true),
+          _row('Total', '\$${cart.total.toStringAsFixed(2)}',
+              isBold: true),
           const SizedBox(height: 20),
           CustomButton(
             label: 'PROCEED TO CHECKOUT',
-            onTap: () => Navigator.pushNamed(context, AppRoutes.checkout),
+            onTap: () =>
+                Navigator.pushNamed(context, AppRoutes.checkout),
             width: double.infinity,
           ),
         ],
@@ -266,7 +285,8 @@ class _OrderSummary extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value, {bool isBold = false}) {
+  Widget _row(String label, String value,
+      {bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -275,7 +295,8 @@ class _OrderSummary extends StatelessWidget {
           style: TextStyle(
             color: isBold ? AppColors.white : AppColors.textMuted,
             fontSize: isBold ? 16 : 14,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+            fontWeight:
+                isBold ? FontWeight.w700 : FontWeight.w400,
           ),
         ),
         Text(
@@ -283,7 +304,8 @@ class _OrderSummary extends StatelessWidget {
           style: TextStyle(
             color: isBold ? AppColors.accent : AppColors.white,
             fontSize: isBold ? 18 : 14,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            fontWeight:
+                isBold ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ],
@@ -291,7 +313,7 @@ class _OrderSummary extends StatelessWidget {
   }
 }
 
-// ── Empty Cart State ───────────────────────────────────────────────────────────
+// ── Empty Cart ─────────────────────────────────────────────────────────────────
 class _EmptyCart extends StatelessWidget {
   const _EmptyCart();
 
@@ -302,6 +324,7 @@ class _EmptyCart extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 36),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               width: 100,
@@ -330,28 +353,20 @@ class _EmptyCart extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Add items to start shopping',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+              style: TextStyle(
+                  color: AppColors.textMuted, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            // Fixed-width button — no longer full screen width
+            // ── Fixed-width centred button ──────────────────────────
             SizedBox(
               width: 220,
               height: 50,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: () => Navigator.pushNamed(
                   context,
                   AppRoutes.productList,
                   arguments: {'category': 'All'},
-                ),
-                icon: const Icon(Icons.storefront_outlined, size: 18),
-                label: const Text(
-                  'BROWSE PRODUCTS',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accent,
@@ -359,6 +374,25 @@ class _EmptyCart extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.storefront_outlined, size: 18,
+                        color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text(
+                      'BROWSE PRODUCTS',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

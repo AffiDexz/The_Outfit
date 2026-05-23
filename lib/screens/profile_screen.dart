@@ -135,7 +135,6 @@ class ProfileScreen extends StatelessWidget {
                         icon: Icons.shopping_bag_outlined,
                         title: 'My Orders',
                         subtitle: 'View your order history',
-                        // FIX: show "No orders yet" snackbar if orders is empty
                         onTap: () {
                           final orders = context.read<UserProvider>().orders;
                           if (orders.isEmpty) {

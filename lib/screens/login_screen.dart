@@ -18,20 +18,23 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
   bool _obscure    = true;
-  bool _loading    = false;
 
   late AnimationController _fadeCtrl;
-  late Animation<Offset> _slideAnim;
-  late Animation<double>  _fadeAnim;
+  late Animation<Offset>   _slideAnim;
+  late Animation<double>   _fadeAnim;
 
   @override
   void initState() {
     super.initState();
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
         .animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
+    _fadeAnim  = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
     _fadeCtrl.forward();
+    // Clear any leftover error from previous session
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<UserProvider>().clearError();
+    });
   }
 
   @override
@@ -42,22 +45,19 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _login() async {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-
-    // Store user data — derive a name from the email (before @)
-    final emailName = _emailCtrl.text.split('@').first;
-    final displayName = emailName[0].toUpperCase() + emailName.substring(1);
-    context.read<UserProvider>().login(
-      fullName: displayName,
-      email:    _emailCtrl.text.trim(),
+    final userProv = context.read<UserProvider>();
+    final success  = await userProv.login(
+      email:    _emailCtrl.text,
+      password: _passCtrl.text,
     );
-
-    setState(() => _loading = false);
-    Navigator.pushReplacementNamed(context, AppRoutes.main);
+    if (!mounted) return;
+    if (success) {
+      Navigator.pushReplacementNamed(context, AppRoutes.main);
+    } else {
+      // Error is shown below the button via Consumer
+    }
   }
 
   @override
@@ -103,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen>
                     const Text('Sign in to continue',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
                     const SizedBox(height: 36),
+
                     // Email
                     TextFormField(
                       controller: _emailCtrl,
@@ -112,10 +113,10 @@ class _LoginScreenState extends State<LoginScreen>
                         labelText: 'Email Address',
                         prefixIcon: Icon(Icons.email_outlined),
                       ),
-                      validator: (v) =>
-                          v == null || !v.contains('@') ? 'Enter a valid email' : null,
+                      validator: (v) => v == null || !v.contains('@') ? 'Enter a valid email' : null,
                     ),
                     const SizedBox(height: 16),
+
                     // Password
                     TextFormField(
                       controller: _passCtrl,
@@ -130,8 +131,7 @@ class _LoginScreenState extends State<LoginScreen>
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
-                      validator: (v) =>
-                          v == null || v.length < 6 ? 'Minimum 6 characters' : null,
+                      validator: (v) => v == null || v.length < 6 ? 'Minimum 6 characters' : null,
                     ),
                     const SizedBox(height: 10),
                     const Align(
@@ -140,7 +140,43 @@ class _LoginScreenState extends State<LoginScreen>
                           style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w500)),
                     ),
                     const SizedBox(height: 30),
-                    CustomButton(label: 'SIGN IN', onTap: _login, isLoading: _loading, width: double.infinity),
+
+                    // Sign in button
+                    Consumer<UserProvider>(
+                      builder: (_, userProv, __) => Column(
+                        children: [
+                          CustomButton(
+                            label: 'SIGN IN',
+                            onTap: _login,
+                            isLoading: userProv.loading,
+                            width: double.infinity,
+                          ),
+                          // Firebase error message
+                          if (userProv.error != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(userProv.error!,
+                                        style: const TextStyle(color: AppColors.error, fontSize: 12)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 28),
                     const Row(children: [
                       Expanded(child: Divider(color: AppColors.divider)),
@@ -160,8 +196,7 @@ class _LoginScreenState extends State<LoginScreen>
                           GestureDetector(
                             onTap: () => Navigator.pushNamed(context, AppRoutes.register),
                             child: const Text('Register',
-                                style: TextStyle(color: AppColors.accent,
-                                    fontWeight: FontWeight.w600, fontSize: 14)),
+                                style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600, fontSize: 14)),
                           ),
                         ],
                       ),

@@ -22,7 +22,7 @@ class OrdersScreen extends StatelessWidget {
         ),
       ),
       body: orders.isEmpty
-          ? _EmptyOrders()
+          ? const _EmptyOrders()
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: orders.length,
@@ -50,22 +50,19 @@ class _OrderCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(16),
-      ),
+          color: AppColors.cardBg, borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
-          // ── Header ───────────────────────────────────────────────────────
+          // Header
           Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10)),
                   child: const Icon(Icons.receipt_long_outlined,
                       color: AppColors.accent, size: 20),
                 ),
@@ -74,45 +71,37 @@ class _OrderCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        order.id,
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
+                      Text(order.id.substring(0, 16),
+                          style: const TextStyle(
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12)),
                       const SizedBox(height: 2),
-                      Text(
-                        _formatDate(order.placedAt),
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 11),
-                      ),
+                      Text(_formatDate(order.placedAt),
+                          style: const TextStyle(
+                              color: AppColors.textMuted, fontSize: 11)),
                     ],
                   ),
                 ),
-                // Status badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _statusColor.withAlpha(38),
+                    color: _statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(50),
                   ),
-                  child: Text(
-                    order.statusLabel,
-                    style: TextStyle(
-                      color: _statusColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: Text(order.statusLabel,
+                      style: TextStyle(
+                          color: _statusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
           ),
           const Divider(height: 1, color: AppColors.divider, indent: 16),
 
-          // ── Items preview ────────────────────────────────────────────────
+          // Items preview
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -124,15 +113,11 @@ class _OrderCard extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              item.product.imageUrl,
-                              width: 46,
-                              height: 46,
-                              fit: BoxFit.cover,
+                              item['imageUrl'] ?? '',
+                              width: 46, height: 46, fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
-                                width: 46,
-                                height: 46,
-                                color: AppColors.surface,
-                              ),
+                                  width: 46, height: 46,
+                                  color: AppColors.surface),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -140,62 +125,52 @@ class _OrderCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Text(item['name'] ?? '',
+                                    style: const TextStyle(
+                                        color: AppColors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
                                 Text(
-                                  item.product.name,
+                                  '${item['selectedSize'] ?? ''} • ${item['selectedColor'] ?? ''} × ${item['quantity'] ?? 1}',
                                   style: const TextStyle(
-                                      color: AppColors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  '${item.selectedSize} • ${item.selectedColor} × ${item.quantity}',
-                                  style: const TextStyle(
-                                      color: AppColors.textMuted, fontSize: 11),
-                                ),
+                                      color: AppColors.textMuted, fontSize: 11)),
                               ],
                             ),
                           ),
-                          Text(
-                            '\$${item.totalPrice.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                                color: AppColors.accent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12),
-                          ),
+                          Text('\$${(item['totalPrice'] ?? 0).toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                  color: AppColors.accent,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12)),
                         ],
                       ),
                     )),
                 if (order.items.length > 2)
-                  Text(
-                    '+${order.items.length - 2} more item(s)',
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 11),
-                  ),
+                  Text('+${order.items.length - 2} more item(s)',
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 11)),
               ],
             ),
           ),
           const Divider(height: 1, color: AppColors.divider, indent: 16),
 
-          // ── Footer ───────────────────────────────────────────────────────
+          // Footer
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${order.itemCount} item(s)',
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                ),
-                Text(
-                  'Total: \$${order.total.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
+                Text('${order.itemCount} item(s)',
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 12)),
+                Text('Total: \$${order.total.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
               ],
             ),
           ),
@@ -206,14 +181,17 @@ class _OrderCard extends StatelessWidget {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan','Feb','Mar','Apr','May','Jun',
+      'Jul','Aug','Sep','Oct','Nov','Dec',
     ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}  ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}  '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
 
 class _EmptyOrders extends StatelessWidget {
+  const _EmptyOrders();
+
   @override
   Widget build(BuildContext context) {
     return const Center(

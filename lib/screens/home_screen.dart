@@ -1,9 +1,8 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
-import '../services/product_data.dart';
+import '../providers/product_provider.dart';
 import '../utils/app_constants.dart';
 import '../widgets/category_card.dart';
 import '../widgets/product_card.dart';
@@ -16,11 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedCategory = 'All';
   final _scrollCtrl = ScrollController();
-
-  List<Product> get _filteredProducts =>
-      ProductData.byCategory(_selectedCategory);
 
   @override
   void dispose() {
@@ -30,7 +25,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
+    final cart        = context.watch<CartProvider>();
+    final productProv = context.watch<ProductProvider>();
+    // Show all products — filtered by selected category (All = everything)
+    final products = productProv.filtered;
+    const categories  = ProductProvider.categories;
 
     return Scaffold(
       backgroundColor: AppColors.primary,
@@ -45,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
             elevation: 0,
             title: const _LogoTitle(),
             actions: [
-              // Search icon
               IconButton(
                 icon: const Icon(Icons.search_rounded),
                 onPressed: () =>
@@ -84,44 +82,44 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          SliverToBoxAdapter(
+          // Hero banner + Categories title
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   _HeroBanner(),
-                  const SizedBox(height: 28),
-                  const _SectionTitle(title: 'Categories'),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 28),
+                  _SectionTitle(title: 'Categories'),
+                  SizedBox(height: 12),
                 ],
               ),
             ),
           ),
 
-          // Category pills
+          // ── Category pills ─────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: SizedBox(
               height: 40,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: ProductData.categories.length,
+                itemCount: categories.length,
                 itemBuilder: (_, i) {
-                  final cat = ProductData.categories[i];
+                  final cat = categories[i];
                   return CategoryCard(
                     label: cat,
-                    isSelected: _selectedCategory == cat,
-                    onTap: () =>
-                        setState(() => _selectedCategory = cat),
+                    isSelected: productProv.selectedCategory == cat,
+                    onTap: () => productProv.setCategory(cat),
                   );
                 },
               ),
             ),
           ),
 
-          // Featured header
+          // ── Featured header ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -133,7 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () => Navigator.pushNamed(
                       context,
                       AppRoutes.productList,
-                      arguments: {'category': _selectedCategory},
+                      arguments: {
+                        'category': productProv.selectedCategory
+                      },
                     ),
                     child: const Text(
                       'See All',
@@ -149,39 +149,66 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Product grid
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverGrid(
-              delegate: SliverChildBuilderDelegate(
-                (ctx, i) {
-                  final product = _filteredProducts[i];
-                  return ProductCard(
-                    product: product,
-                    heroTag: 'home_${product.id}',
-                    onTap: () => Navigator.pushNamed(
-                      ctx,
-                      AppRoutes.productDetail,
-                      arguments: {
-                        'product': product,
-                        'heroTag': 'home_${product.id}',
-                      },
-                    ),
-                  );
-                },
-                childCount: _filteredProducts.length,
+          // ── Loading indicator ──────────────────────────────────────────────
+          if (productProv.loading)
+            const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: CircularProgressIndicator(
+                    color: AppColors.accent,
+                    strokeWidth: 1.5,
+                  ),
+                ),
               ),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.68,
+            )
+          // ── Empty state ────────────────────────────────────────────────────
+          else if (products.isEmpty)
+            const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Text(
+                    'No products found',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                ),
+              ),
+            )
+          // ── Product grid ───────────────────────────────────────────────────
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, i) {
+                    final product = products[i];
+                    return ProductCard(
+                      product: product,
+                      heroTag: 'home_${product.id}',
+                      onTap: () => Navigator.pushNamed(
+                        ctx,
+                        AppRoutes.productDetail,
+                        arguments: {
+                          'product': product,
+                          'heroTag': 'home_${product.id}',
+                        },
+                      ),
+                    );
+                  },
+                  childCount: products.length,
+                ),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.68,
+                ),
               ),
             ),
-          ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 30)),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
@@ -233,6 +260,8 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _HeroBanner extends StatelessWidget {
+  const _HeroBanner();
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -253,15 +282,15 @@ class _HeroBanner extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Background image
+            // Background image from internet
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Image.network(
-                'assets/images/Background.jpg',
+                'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800',
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
-                color: Colors.black.withAlpha(115),
+                color: Colors.black.withValues(alpha: 0.45),
                 colorBlendMode: BlendMode.darken,
                 errorBuilder: (_, __, ___) => Container(
                   decoration: BoxDecoration(
@@ -311,7 +340,7 @@ class _HeroBanner extends StatelessWidget {
                         horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       border: Border.all(
-                          color: AppColors.white.withAlpha(128)),
+                          color: AppColors.white.withValues(alpha: 0.5)),
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: const Text(

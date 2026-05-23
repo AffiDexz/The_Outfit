@@ -1,5 +1,4 @@
 // lib/models/user_model.dart
-
 class UserModel {
   final String fullName;
   final String email;
@@ -7,17 +6,18 @@ class UserModel {
   final String address;
   final String city;
   final String zip;
+  final String profileImageUrl;
 
   const UserModel({
     required this.fullName,
     required this.email,
-    this.phone = '',
-    this.address = '',
-    this.city = '',
-    this.zip = '',
+    this.phone           = '',
+    this.address         = '',
+    this.city            = '',
+    this.zip             = '',
+    this.profileImageUrl = '',
   });
 
-  /// Initials from full name
   String get initials {
     final parts = fullName.trim().split(' ');
     if (parts.length >= 2) {
@@ -33,14 +33,16 @@ class UserModel {
     String? address,
     String? city,
     String? zip,
+    String? profileImageUrl,
   }) {
     return UserModel(
-      fullName: fullName ?? this.fullName,
-      email:    email    ?? this.email,
-      phone:    phone    ?? this.phone,
-      address:  address  ?? this.address,
-      city:     city     ?? this.city,
-      zip:      zip      ?? this.zip,
+      fullName:        fullName        ?? this.fullName,
+      email:           email           ?? this.email,
+      phone:           phone           ?? this.phone,
+      address:         address         ?? this.address,
+      city:            city            ?? this.city,
+      zip:             zip             ?? this.zip,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
     );
   }
 }
